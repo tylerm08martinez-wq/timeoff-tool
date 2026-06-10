@@ -1,0 +1,16 @@
+{
+  "name": "Time-Off & Attendance Log — Station 849",
+  "short_name": "Time-Off",
+  "description": "Capture attendance events (call-offs, lates, NCNS, scheduled absences) for the QA admin roster, phone-to-desk.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f0f2f5",
+  "theme_color": "#4D148C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

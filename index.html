@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time-Off &amp; Attendance Log — Station 849</title>
+  <!-- PWA: Add to Home Screen (issue #115). Presentation only — no data/logic. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4D148C">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Time-Off">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      background: #4D148C;
+      color: white;
+      padding: 14px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.01em; }
+    .back-link {
+      color: white;
+      opacity: 0.85;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .back-link:hover { opacity: 1; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn:active { opacity: 0.85; }
+    .btn-purple { background: #4D148C; color: white; }
+    .btn-purple:hover { background: #3a0f6a; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-gray { background: #e4e4e7; color: #333; }
+    .btn-gray:hover { background: #d1d1d6; }
+
+    /* ── Summary cards ──────────────────────────────────────────────────────── */
+    #summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 14px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border-left: 4px solid #e0e0e0;
+    }
+    .stat-card.orange { border-color: #FF6200; }
+    .stat-card.red    { border-color: #dc2626; }
+    .stat-card.purple { border-color: #4D148C; }
+    .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .stat-card .value { font-size: 30px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+    .stat-card.orange .value { color: #FF6200; }
+    .stat-card.red .value    { color: #dc2626; }
+    .stat-card.purple .value { color: #4D148C; }
+
+    /* ── Form panel ─────────────────────────────────────────────────────────── */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .panel-header h2 { font-size: 15px; font-weight: 700; }
+    #form-mode { font-size: 12px; color: #FF6200; font-weight: 600; display: none; }
+
+    form { padding: 18px 20px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px 16px;
+    }
+    .field { display: flex; flex-direction: column; }
+    .field.wide { grid-column: 1 / -1; }
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4D148C;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      border: 1px solid #d1c4e9;
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1a2e;
+      background: #faf8ff;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4D148C;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 54px; }
+    .form-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    #form-error { color: #dc2626; font-size: 12px; font-weight: 600; }
+
+    /* ── Table panel ────────────────────────────────────────────────────────── */
+    .table-controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .toggle-wrap { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #555; }
+    .toggle-wrap input { width: auto; }
+    .filter-input {
+      max-width: 200px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #fafafa;
+      padding: 9px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #666;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #ececec;
+      white-space: nowrap;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #f5f5f5;
+      vertical-align: middle;
+    }
+    tbody tr:nth-child(even) td { background: #f8f7fd; }
+    tr:hover td { background: #ece8ff !important; }
+    tr:last-child td { border-bottom: none; }
+
+    .type-pill, .status-pill-tbl, .impact-pill {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .type-request  { background: #ede9ff; color: #4D148C; }
+    .type-callout  { background: #fff3e0; color: #b45309; }
+    .type-late     { background: #fef9c3; color: #854d0e; }
+    .type-ncns     { background: #fef2f2; color: #dc2626; }
+    .type-other    { background: #f3f4f6; color: #6b7280; }
+
+    .status-pending  { background: #fef9c3; color: #854d0e; }
+    .status-approved { background: #dcfce7; color: #15803d; }
+    .status-denied   { background: #fef2f2; color: #dc2626; }
+    .status-recorded { background: #f3f4f6; color: #6b7280; }
+
+    .impact-none  { background: #f3f4f6; color: #6b7280; }
+    .impact-minor { background: #fff3e0; color: #b45309; }
+    .impact-major { background: #fef2f2; color: #dc2626; }
+
+    .type-scheduledabsence { background: #ede9ff; color: #4D148C; }
+    .type-calloff          { background: #fff3e0; color: #b45309; }
+    .type-leftearly        { background: #e0f2fe; color: #075985; }
+
+    .notif-cell { font-size: 12px; color: #555; }
+    .notif-afterstart { color: #dc2626; font-weight: 600; }
+    .notif-none { color: #dc2626; font-weight: 600; }
+
+    .sick-badge {
+      display: inline-block; margin-left: 6px; padding: 1px 7px;
+      border-radius: 999px; font-size: 10px; font-weight: 700;
+      background: #dcfce7; color: #15803d; white-space: nowrap;
+    }
+    tr.row-uncounted td { opacity: 0.62; }
+    #form-hint { color: #b45309; font-size: 12px; font-weight: 600; }
+
+    /* ── Attendance patterns panel ──────────────────────────────────────────── */
+    #watch-body { padding: 6px 8px 14px; }
+    .watch-row {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 11px 12px; border-radius: 7px; margin: 8px 6px;
+      background: #faf9fe; border: 1px solid #f0eef9;
+    }
+    .watch-row.flagged { background: #fef6f6; border-color: #f6caca; }
+    .watch-name { font-weight: 700; font-size: 14px; min-width: 120px; }
+    .watch-counts { display: flex; gap: 10px; font-size: 12px; color: #555; flex-wrap: wrap; }
+    .watch-counts b { color: #1a1a2e; }
+    .watch-flags { flex-basis: 100%; }
+    .watch-flag {
+      display: block; margin-top: 6px; font-size: 12px; font-weight: 600;
+      color: #b91c1c;
+    }
+    .watch-flag::before { content: "\26A0  "; }
+    .watch-empty { padding: 26px; text-align: center; color: #bbb; font-size: 13px; }
+    .watch-ok { color: #15803d; font-size: 11px; font-weight: 700; }
+
+    .dispo-pill {
+      display: inline-block; padding: 2px 9px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: #ede9ff; color: #4D148C;
+      white-space: nowrap;
+    }
+
+    .note-cell { color: #555; font-size: 12px; max-width: 280px; }
+    .action-cell { white-space: nowrap; }
+    .row-btn {
+      background: none;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 4px 9px;
+      margin-right: 4px;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .row-btn.edit:hover   { background: #4D148C; border-color: #4D148C; color: white; }
+    .row-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+    .empty-state { padding: 36px; text-align: center; color: #bbb; font-size: 13px; }
+    .week-label { font-size: 12px; color: #888; margin-left: 4px; }
+
+    .sync-status { font-size: 12px; font-weight: 700; color: #fff; opacity: 0.95; white-space: nowrap; }
+    .sync-status.ok      { color: #bbf7d0; }
+    .sync-status.dirty   { color: #fde68a; }
+    .sync-status.error   { color: #fecaca; }
+    .sync-status.syncing { color: #e9d5ff; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Time-Off &amp; Attendance Log &mdash; Station 849</h1>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span id="sync-status" class="sync-status" title="Sync status"></span>
+    <a href="#" class="back-link" onclick="toggleSettings();return false;">&#9881; Settings</a>
+  </div>
+</header>
+
+<!-- ── Settings panel (sync) ──────────────────────────────────────────────── -->
+<div class="panel" id="settings-panel" style="display:none">
+  <div class="panel-header"><h2>Sync Settings</h2></div>
+  <div style="padding:16px 20px">
+    <p style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.5">
+      Paste a <b>fine-grained Personal Access Token</b> scoped to your private data repo with
+      <b>Contents: Read and write</b>, then enter where the data lives. All values are stored
+      <b>only in this browser</b>; nothing is baked into this page or committed.
+    </p>
+    <div class="field" style="max-width:520px">
+      <label for="f-token">GitHub Token</label>
+      <input type="password" id="f-token" placeholder="github_pat_…" autocomplete="off">
+    </div>
+    <div class="field" style="max-width:520px">
+      <label for="f-owner">Repo Owner</label>
+      <input type="text" id="f-owner" placeholder="your GitHub username" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field" style="max-width:520px">
+      <label for="f-repo">Repo Name</label>
+      <input type="text" id="f-repo" placeholder="your private data repo" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field" style="max-width:520px">
+      <label for="f-branch">Data Branch</label>
+      <input type="text" id="f-branch" placeholder="your data branch" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-purple" onclick="saveSettings()">Save</button>
+      <button type="button" class="btn btn-gray" onclick="clearSettings()">Remove</button>
+      <span id="token-msg" style="font-size:12px;font-weight:600;color:#16a34a"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── This week summary ──────────────────────────────────────────────────── -->
+<div id="summary">
+  <div class="stat-card orange">
+    <div class="label">Callouts This Week</div>
+    <div class="value" id="stat-callouts">0</div>
+  </div>
+  <div class="stat-card red">
+    <div class="label">NCNS This Week</div>
+    <div class="value" id="stat-ncns">0</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="label">Entries This Week</div>
+    <div class="value" id="stat-total">0</div>
+  </div>
+</div>
+
+<!-- ── Entry form ─────────────────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="panel-header">
+    <h2>Log an Event</h2>
+    <span id="form-mode">Editing entry &mdash; <a href="#" onclick="cancelEdit();return false;" style="color:#FF6200">cancel</a></span>
+  </div>
+  <form id="entry-form" onsubmit="return submitEntry(event)">
+    <div class="form-grid">
+      <div class="field">
+        <label for="f-date">Date</label>
+        <input type="date" id="f-date" required>
+      </div>
+      <div class="field">
+        <label for="f-employee">Admin</label>
+        <input type="text" id="f-employee" placeholder="Name" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-type">Event</label>
+        <select id="f-type" onchange="syncFormFields()">
+          <option>Scheduled Absence</option>
+          <option>Call-off</option>
+          <option>Late</option>
+          <option>NCNS</option>
+          <option>Left Early</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="field-status">
+        <label for="f-status">Request Status</label>
+        <select id="f-status">
+          <option>Pending</option>
+          <option>Approved</option>
+          <option>Denied</option>
+        </select>
+      </div>
+      <div class="field" id="field-notification">
+        <label for="f-notification">Notification</label>
+        <select id="f-notification" onchange="syncFormFields()">
+          <option>None</option>
+          <option>Before start</option>
+          <option>After start</option>
+        </select>
+      </div>
+      <div class="field" id="field-protected">
+        <label>Protected Sick</label>
+        <label class="toggle-wrap" style="margin-top:4px">
+          <input type="checkbox" id="f-protected" onchange="syncFormFields()">
+          Protected sick time (not counted)
+        </label>
+      </div>
+      <div class="field" id="field-disposition">
+        <label for="f-disposition">Disposition <span style="font-weight:400;text-transform:none;color:#888">(device-only)</span></label>
+        <select id="f-disposition">
+          <option>None</option>
+          <option>Verbal</option>
+          <option>Written warning</option>
+          <option>Notice of Deficiency</option>
+          <option>Final Notice</option>
+          <option>Suspension</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-time">Reported Time</label>
+        <input type="text" id="f-time" placeholder="e.g. 0430 (optional)" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-impact">Coverage Impact</label>
+        <select id="f-impact">
+          <option>None</option>
+          <option>Minor</option>
+          <option>Major</option>
+        </select>
+      </div>
+      <div class="field wide">
+        <label for="f-note">Note</label>
+        <textarea id="f-note" placeholder="Plain-language operational note (optional)"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-purple" id="submit-btn">Add Entry</button>
+      <button type="button" class="btn btn-gray" onclick="clearForm()">Clear</button>
+      <span id="form-error"></span>
+      <span id="form-hint"></span>
+    </div>
+  </form>
+</div>
+
+<!-- ── Attendance patterns (house standard) ───────────────────────────────── -->
+<div class="panel" id="watch-panel">
+  <div class="panel-header">
+    <h2>Attendance Patterns <span class="week-label">house standard &middot; rolling 30/90 days</span></h2>
+  </div>
+  <div id="watch-body"></div>
+</div>
+
+<!-- ── Entries table ──────────────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="panel-header">
+    <h2>Entries <span class="week-label" id="view-label"></span></h2>
+    <div class="table-controls">
+      <input type="text" class="filter-input" id="filter-input" placeholder="Filter name or event…" oninput="render()" autocomplete="off">
+      <label class="toggle-wrap">
+        <input type="checkbox" id="show-all" onchange="render()">
+        Show full history
+      </label>
+      <button class="btn btn-gray" onclick="syncNow()">&#8635; Sync now</button>
+      <button class="btn btn-purple" onclick="downloadTSV()">&#8595; Download TSV</button>
+      <button class="btn btn-gray" onclick="downloadLogMd()">&#8595; log.md</button>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Admin</th>
+        <th>Event</th>
+        <th>Status</th>
+        <th>Notification</th>
+        <th>Reported Time</th>
+        <th>Impact</th>
+        <th>Note</th>
+        <th>Disposition</th>
+        <th style="width:130px">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="entries-tbody"></tbody>
+  </table>
+</div>
+
+<script src="lib/tool-helpers.js"></script>
+<script src="lib/time-off.js"></script>
+<script src="lib/attendance-rules.js"></script>
+<script src="lib/entries-sync.js"></script>
+<script>
+// ─── PERSISTENCE ────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'timeoff_entries';
+const toolStorage = ToolHelpers.createStorage();
+
+const TYPES         = TimeOff.TYPES;
+const STATUSES      = ['Pending', 'Approved', 'Denied'];
+const NOTIFICATIONS = ['None', 'Before start', 'After start'];
+const IMPACTS       = ['None', 'Minor', 'Major'];
+
+// Which events use which conditional field.
+const STATUS_EVENTS    = ['Scheduled Absence'];
+const NOTIF_EVENTS     = ['Call-off', 'Late', 'NCNS'];
+const PROTECTED_EVENTS = ['Scheduled Absence', 'Call-off', 'Late', 'NCNS', 'Left Early'];
+const DISPO_EVENTS     = ['Call-off', 'Late', 'NCNS'];
+
+let entries = [];
+let editingId = null;
+
+function loadEntries() {
+  entries = toolStorage.get(STORAGE_KEY, []);
+  if (!Array.isArray(entries)) entries = [];
+  // Migrate legacy taxonomy (Request→Scheduled Absence, Callout→Call-off)
+  // and backfill updatedAt on any pre-sync records so merges behave.
+  entries.forEach(en => { en.type = TimeOff.normalizeType(en.type); });
+  entries = EntriesSync.backfillUpdatedAt(entries);
+}
+
+// Live (non-tombstone) entries — everything the UI counts or shows.
+function activeList() {
+  return EntriesSync.activeEntries(entries);
+}
+
+// Show Request Status only for Scheduled Absence; Notification only for
+// Call-off / Late / NCNS. Keeps the form matched to the event type.
+function syncFormFields() {
+  const type  = document.getElementById('f-type').value;
+  const usesNotif = NOTIF_EVENTS.indexOf(type) !== -1;
+  document.getElementById('field-status').style.display =
+    STATUS_EVENTS.indexOf(type) !== -1 ? '' : 'none';
+  document.getElementById('field-notification').style.display = usesNotif ? '' : 'none';
+  document.getElementById('field-protected').style.display =
+    PROTECTED_EVENTS.indexOf(type) !== -1 ? '' : 'none';
+  document.getElementById('field-disposition').style.display =
+    DISPO_EVENTS.indexOf(type) !== -1 ? '' : 'none';
+
+  // Live decision-support hint: warn when the picked Call-off/NCNS disagrees
+  // with what the notification implies (policy classifies by notification).
+  const hint = document.getElementById('form-hint');
+  if (usesNotif && TimeOff.notificationMismatch({ type: type, notification: document.getElementById('f-notification').value })) {
+    const suggested = TimeOff.deriveAbsenceType(document.getElementById('f-notification').value);
+    hint.textContent = '⚠ Notification suggests this is a ' + suggested + '.';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function saveEntries() {
+  toolStorage.set(STORAGE_KEY, entries);
+}
+
+// ─── FORM ─────────────────────────────────────────────────────────────────────
+function clearForm() {
+  document.getElementById('entry-form').reset();
+  document.getElementById('f-date').value = ToolHelpers.isoDate();
+  document.getElementById('f-error') && (document.getElementById('form-error').textContent = '');
+  document.getElementById('form-error').textContent = '';
+  syncFormFields();
+  cancelEdit();
+}
+
+function cancelEdit() {
+  editingId = null;
+  document.getElementById('form-mode').style.display = 'none';
+  document.getElementById('submit-btn').textContent = 'Add Entry';
+}
+
+function submitEntry(e) {
+  e.preventDefault();
+  const date     = document.getElementById('f-date').value;
+  const employee = document.getElementById('f-employee').value.trim();
+  const type     = document.getElementById('f-type').value;
+  // Only persist the conditional field that applies to this event.
+  const status       = STATUS_EVENTS.indexOf(type) !== -1 ? document.getElementById('f-status').value : '';
+  const notification = NOTIF_EVENTS.indexOf(type) !== -1 ? document.getElementById('f-notification').value : '';
+  const protectedSick = PROTECTED_EVENTS.indexOf(type) !== -1 && document.getElementById('f-protected').checked;
+  // Device-local only — excluded from the synced facts payload (TimeOff.factsOnly).
+  const dispoVal = document.getElementById('f-disposition').value;
+  const disposition = (DISPO_EVENTS.indexOf(type) !== -1 && dispoVal !== 'None') ? dispoVal : '';
+  const time     = document.getElementById('f-time').value.trim();
+  const impact   = document.getElementById('f-impact').value;
+  const note     = document.getElementById('f-note').value.trim();
+  const err      = document.getElementById('form-error');
+
+  if (!date)     { err.textContent = 'Date is required.'; return false; }
+  if (!employee) { err.textContent = 'Admin name is required.'; return false; }
+  err.textContent = '';
+
+  if (editingId) {
+    const entry = entries.find(en => en.id === editingId);
+    if (entry) Object.assign(entry, { date, employee, type, status, notification, protectedSick, time, impact, note, disposition, updatedAt: EntriesSync.nowIso() });
+  } else {
+    entries.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date, employee, type, status, notification, protectedSick, time, impact, note, disposition,
+      updatedAt: EntriesSync.nowIso()
+    });
+  }
+
+  saveEntries();
+  clearForm();
+  render();
+  scheduleSync();
+  return false;
+}
+
+function editEntry(id) {
+  const entry = entries.find(en => en.id === id);
+  if (!entry) return;
+  editingId = id;
+  document.getElementById('f-date').value         = entry.date;
+  document.getElementById('f-employee').value     = entry.employee;
+  document.getElementById('f-type').value         = entry.type;
+  document.getElementById('f-status').value       = entry.status || 'Pending';
+  document.getElementById('f-notification').value = entry.notification || 'None';
+  document.getElementById('f-protected').checked  = !!entry.protectedSick;
+  document.getElementById('f-disposition').value  = entry.disposition || 'None';
+  document.getElementById('f-time').value         = entry.time || '';
+  document.getElementById('f-impact').value       = entry.impact;
+  document.getElementById('f-note').value         = entry.note || '';
+  syncFormFields();
+  document.getElementById('form-mode').style.display = 'inline';
+  document.getElementById('submit-btn').textContent = 'Save Changes';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteEntry(id) {
+  const entry = entries.find(en => en.id === id);
+  if (!entry) return;
+  if (!confirm('Delete this entry for ' + entry.employee + ' (' + entry.date + ')?')) return;
+  // Soft delete: tombstone so the deletion propagates across devices instead
+  // of being resurrected by a device that still holds the record.
+  Object.assign(entry, EntriesSync.tombstone(entry));
+  if (editingId === id) cancelEdit();
+  saveEntries();
+  render();
+  scheduleSync();
+}
+
+function updateSummary() {
+  const summary = summarize(activeList());
+  document.getElementById('stat-callouts').textContent = summary.byType['Call-off'] || 0;
+  document.getElementById('stat-ncns').textContent     = summary.byType.NCNS || 0;
+  document.getElementById('stat-total').textContent    = summary.total;
+}
+
+// Decision-support panel: per-admin rolling counts + any fired house-standard
+// flags. Flagged admins float to the top. Always shown for all dates (patterns
+// are not a this-week concept), independent of the table's week filter.
+function renderWatch() {
+  const body = document.getElementById('watch-body');
+  const active = activeList();
+  const rows = AttendanceRules.evaluateByAdmin(active);
+
+  if (rows.length === 0) {
+    body.innerHTML = '<div class="watch-empty">No attendance events logged yet.</div>';
+    return;
+  }
+
+  // Flagged admins first, then alphabetical (evaluateByAdmin already sorts).
+  rows.sort((a, b) => (b.flags.length > 0) - (a.flags.length > 0));
+
+  body.innerHTML = '';
+  rows.forEach(row => {
+    const c30 = AttendanceRules.rollingCounts(
+      active.filter(en => en.employee === row.admin), 30);
+    const c90 = AttendanceRules.rollingCounts(
+      active.filter(en => en.employee === row.admin), 90);
+
+    const div = document.createElement('div');
+    div.className = 'watch-row' + (row.flags.length ? ' flagged' : '');
+    const flagsHtml = row.flags.length
+      ? '<div class="watch-flags">' +
+          row.flags.map(f => '<span class="watch-flag">' + ToolHelpers.escapeHtml(f.message) + '</span>').join('') +
+        '</div>'
+      : '';
+    div.innerHTML =
+      '<span class="watch-name">' + ToolHelpers.escapeHtml(row.admin || '—') + '</span>' +
+      '<span class="watch-counts">' +
+        '<span>30d: <b>' + c30['Late'] + '</b> late &middot; <b>' + c30['Call-off'] + '</b> call-off &middot; <b>' + c30['NCNS'] + '</b> NCNS</span>' +
+        '<span>90d total: <b>' + c90.total + '</b></span>' +
+        (row.flags.length ? '' : '<span class="watch-ok">within standard</span>') +
+      '</span>' +
+      flagsHtml;
+    body.appendChild(div);
+  });
+}
+
+function render() {
+  updateSummary();
+  renderWatch();
+
+  const showAll = document.getElementById('show-all').checked;
+  const filter  = document.getElementById('filter-input').value.trim().toLowerCase();
+
+  document.getElementById('view-label').textContent = showAll ? '(all dates)' : '(this week)';
+
+  let rows = activeList();
+  if (!showAll) rows = rows.filter(en => isThisWeek(en.date));
+  if (filter) {
+    rows = rows.filter(en =>
+      en.employee.toLowerCase().includes(filter) ||
+      en.type.toLowerCase().includes(filter)
+    );
+  }
+  // Newest date first; stable within a date
+  rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  const tbody = document.getElementById('entries-tbody');
+  tbody.innerHTML = '';
+
+  if (rows.length === 0) {
+    const msg = activeList().length === 0
+      ? 'No entries yet — log an event above.'
+      : (showAll ? 'No entries match this filter.' : 'No entries for this week. Toggle "Show full history" to see all.');
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">' + msg + '</td></tr>';
+    return;
+  }
+
+  const dash = '<span style="color:#bbb">—</span>';
+  rows.forEach(en => {
+    const statusCell = en.status
+      ? '<span class="status-pill-tbl ' + pillClass('status', en.status) + '">' + ToolHelpers.escapeHtml(en.status) + '</span>'
+      : dash;
+    const notifCell = en.notification
+      ? '<span class="notif-cell ' + pillClass('notif', en.notification) + '">' + ToolHelpers.escapeHtml(en.notification) + '</span>'
+      : dash;
+    const sickBadge = en.protectedSick ? '<span class="sick-badge">protected · not counted</span>' : '';
+    const tr = document.createElement('tr');
+    if (en.protectedSick) tr.className = 'row-uncounted';
+    tr.innerHTML =
+      '<td>' + ToolHelpers.escapeHtml(en.date) + '</td>' +
+      '<td>' + ToolHelpers.escapeHtml(en.employee) + '</td>' +
+      '<td><span class="type-pill ' + pillClass('type', en.type) + '">' + ToolHelpers.escapeHtml(en.type) + '</span>' + sickBadge + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td>' + notifCell + '</td>' +
+      '<td>' + (en.time ? ToolHelpers.escapeHtml(en.time) : dash) + '</td>' +
+      '<td><span class="impact-pill ' + pillClass('impact', en.impact) + '">' + ToolHelpers.escapeHtml(en.impact) + '</span></td>' +
+      '<td class="note-cell">' + (en.note ? ToolHelpers.escapeHtml(en.note) : dash) + '</td>' +
+      '<td>' + (en.disposition ? '<span class="dispo-pill">' + ToolHelpers.escapeHtml(en.disposition) + '</span>' : dash) + '</td>' +
+      '<td class="action-cell"></td>';
+
+    const actions = tr.lastElementChild;
+    const editBtn = document.createElement('button');
+    editBtn.className = 'row-btn edit';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => editEntry(en.id));
+    const delBtn = document.createElement('button');
+    delBtn.className = 'row-btn delete';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', () => deleteEntry(en.id));
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function downloadTSV() {
+  const active = activeList();
+  if (active.length === 0) { alert('No entries to export.'); return; }
+  const content = buildTSV(active);
+  ToolHelpers.downloadTSV('time-off-log-' + ToolHelpers.isoDate() + '.tsv', content);
+}
+
+// Regenerate the log.md mirror on demand from the synced entries (issue #111).
+// entries.json stays the source of truth; this just renders the read-only view.
+function downloadLogMd() {
+  const content = TimeOff.buildLogMarkdown(activeList());
+  ToolHelpers.downloadTSV('log.md', content, 'text/markdown');
+}
+
+// ─── SYNC CONTROLLER (issue #110) ───────────────────────────────────────────
+const TOKEN_KEY  = 'timeoff_gh_token';
+const COORDS_KEY = 'timeoff_repo_coords';
+const SHA_KEY    = 'timeoff_gh_sha';
+let knownSha  = toolStorage.get(SHA_KEY, null);
+let dirty     = false;
+let syncing   = false;
+let syncTimer = null;
+
+function getToken() { return toolStorage.get(TOKEN_KEY, ''); }
+
+// Repo coordinates are settings-driven (ADR 0005 hosting amendment, #116):
+// nothing about the private data repo is hard-coded in this public page.
+function getCoords() { return toolStorage.get(COORDS_KEY, { owner: '', repo: '', branch: '' }); }
+function hasCoords() { const c = getCoords(); return !!(c.owner && c.repo && c.branch); }
+function syncReady() { return !!getToken() && hasCoords(); }
+
+// Disposition is device-local (ADR 0005): it must never reach the repo, and a
+// remote facts-update must not wipe it locally. Snapshot it before a merge and
+// re-attach afterward; the repo payload is projected through factsOnly on PUT.
+function localOnlyMap() {
+  const m = {};
+  entries.forEach(e => { if (e && e.disposition) m[e.id] = e.disposition; });
+  return m;
+}
+function reattachLocalOnly(list, map) {
+  list.forEach(e => { if (e && !e.deleted && !e.disposition && map[e.id]) e.disposition = map[e.id]; });
+  return list;
+}
+
+function setStatus(kind, text) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + kind;
+  el.textContent = text;
+}
+
+function refreshStatus() {
+  if (!getToken())      return setStatus('', 'sync off — add token in Settings');
+  if (!hasCoords())     return setStatus('', 'sync off — add repo in Settings');
+  if (syncing)          return setStatus('syncing', 'syncing…');
+  if (dirty)            return setStatus('dirty', 'unsynced — tap Sync now');
+  setStatus('ok', 'synced ✓');
+}
+
+// Background sync after a local change: debounced GET-merge-PUT.
+function scheduleSync() {
+  dirty = true;
+  refreshStatus();
+  if (!syncReady()) return;           // stays local-only until token + repo set
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, 800);
+}
+
+async function syncNow() {
+  const token = getToken();
+  if (!syncReady()) { refreshStatus(); return; }
+  if (syncing) return;
+  syncing = true; refreshStatus();
+  try {
+    const localOnly = localOnlyMap();
+    // factsOnly strips disposition from the repo payload; merged result keeps
+    // full local detail, and we re-attach disposition for the local cache.
+    const result = await EntriesSync.pushMerge(token, entries, knownSha, 3, TimeOff.factsOnly, getCoords());
+    entries = reattachLocalOnly(result.entries, localOnly);
+    knownSha = result.sha;
+    toolStorage.set(SHA_KEY, knownSha);
+    saveEntries();
+    dirty = false;
+    render();
+    setStatus('ok', 'synced ✓');
+  } catch (e) {
+    if (e.code === 'auth')      setStatus('error', 'token invalid — update in Settings');
+    else if (e.code === 'conflict') setStatus('error', 'sync conflict — tap Sync now');
+    else                        setStatus('error', 'offline — ' + activeList().length + ' local');
+  } finally {
+    syncing = false;
+  }
+}
+
+// Pull + merge on load so a device picks up others' entries.
+async function pullOnLoad() {
+  const token = getToken();
+  if (!syncReady()) { refreshStatus(); return; }
+  syncing = true; refreshStatus();
+  try {
+    const remote = await EntriesSync.fetchRemote(token, getCoords());
+    knownSha = remote.sha;
+    toolStorage.set(SHA_KEY, knownSha);
+    const localOnly = localOnlyMap();
+    const hadLocalChanges = EntriesSync.hasLocalChanges(entries.map(TimeOff.factsOnly), remote.entries);
+    entries = reattachLocalOnly(EntriesSync.merge(entries, remote.entries), localOnly);
+    saveEntries();
+    render();
+    syncing = false;
+    // Only push back if this device actually has something new — avoids an
+    // empty commit on every load.
+    if (hadLocalChanges) { await syncNow(); }
+    else { dirty = false; setStatus('ok', 'synced ✓'); }
+  } catch (e) {
+    syncing = false;
+    if (e.code === 'auth') setStatus('error', 'token invalid — update in Settings');
+    else setStatus('error', 'offline — working locally');
+  }
+}
+
+// ─── SETTINGS PANEL ─────────────────────────────────────────────────────────
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  const show = p.style.display === 'none';
+  p.style.display = show ? '' : 'none';
+  if (show) {
+    const c = getCoords();
+    document.getElementById('f-token').value  = getToken();
+    document.getElementById('f-owner').value  = c.owner;
+    document.getElementById('f-repo').value   = c.repo;
+    document.getElementById('f-branch').value = c.branch;
+  }
+}
+function saveSettings() {
+  const token  = document.getElementById('f-token').value.trim();
+  const owner  = document.getElementById('f-owner').value.trim();
+  const repo   = document.getElementById('f-repo').value.trim();
+  const branch = document.getElementById('f-branch').value.trim();
+  toolStorage.set(TOKEN_KEY, token);
+  toolStorage.set(COORDS_KEY, { owner: owner, repo: repo, branch: branch });
+  const msg = document.getElementById('token-msg');
+  if (syncReady())      msg.textContent = 'Saved. Syncing…';
+  else if (token)       msg.textContent = 'Saved — add repo owner/name/branch to sync.';
+  else                  msg.textContent = 'Saved locally — add a token to sync.';
+  refreshStatus();
+  if (syncReady()) syncNow();
+}
+function clearSettings() {
+  toolStorage.set(TOKEN_KEY, '');
+  toolStorage.set(COORDS_KEY, { owner: '', repo: '', branch: '' });
+  document.getElementById('f-token').value  = '';
+  document.getElementById('f-owner').value  = '';
+  document.getElementById('f-repo').value   = '';
+  document.getElementById('f-branch').value = '';
+  document.getElementById('token-msg').textContent = 'Settings removed.';
+  refreshStatus();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadEntries();
+document.getElementById('f-date').value = ToolHelpers.isoDate();
+syncFormFields();
+render();
+refreshStatus();
+pullOnLoad();
+</script>
+</body>
+</html>
