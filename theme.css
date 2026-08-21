@@ -1,0 +1,268 @@
+/* Shared dark theme for every Station 849 dashboard tab.
+ *
+ * Loaded AFTER each tab's inline <style>, and every rule is scoped to
+ * html[data-theme="dark"], so:
+ *   - in light mode (no attribute) nothing here applies — tabs are unchanged;
+ *   - in dark mode these win by both later-source-order and the extra
+ *     specificity of the html[data-theme="dark"] prefix, so no !important.
+ *
+ * lib/theme.js sets the attribute (persisted in localStorage) and mounts the
+ * floating toggle. Deliberately leaves status pills / colored schedule cells /
+ * the purple header alone — those colors stay meaningful on a dark surface.
+ */
+
+/* ── Semantic color palette (STRUCTURAL fix, #307) ─────────────────────────────
+ * A small token set that flips ONCE here instead of being re-enumerated per
+ * class selector. Tools reference var(--…) for their neutral/structural colors
+ * (surfaces, text, borders, muted text, subtle fills); theme.css supplies light
+ * defaults on :root and dark values under html[data-theme="dark"].
+ *
+ * Deliberately NOT tokenized: brand purple (#4D148C) / orange (#FF6200) and the
+ * status pills (green/red/blue/amber) — those stay meaningful on both surfaces,
+ * matching the existing "leave pills alone" philosophy. Migrate only the neutral
+ * greys that break in dark mode.
+ */
+:root {
+  --surface:        #ffffff;   /* white cards / panels / drop zones */
+  --surface-2:      #f8f7fd;   /* subtle raised fill: zebra rows, detail panels */
+  --surface-3:      #fafafa;   /* table header / faint header fills */
+  --app-bg:         #f0f2f5;   /* page background */
+  --text:           #1a1a2e;   /* primary body text */
+  --text-muted:     #666666;   /* secondary text (labels, th) */
+  --text-faint:     #999999;   /* hints, notes, placeholders */
+  --text-fainter:   #bbbbbb;   /* very faint: empty states, carets */
+  --border:         #e0e0e0;   /* default borders */
+  --border-soft:    #f0f0f0;   /* faint dividers */
+  --border-strong:  #d1d5db;   /* input / control borders */
+  --field-bg:       #ffffff;   /* form field background */
+  --field-bg-alt:   #faf8ff;   /* tinted field background */
+  --hover-soft:     #f3eeff;   /* soft purple hover wash */
+  --hover-row:      #ece8ff;   /* table row hover wash */
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --surface:        #1e1f29;
+  --surface-2:      #23242f;
+  --surface-3:      #23242f;
+  --app-bg:         #14151b;
+  --text:           #e7e7ec;
+  --text-muted:     #b9b9c6;
+  --text-faint:     #9b9ba8;
+  --text-fainter:   #8a8a97;
+  --border:         #2e2f3c;
+  --border-soft:    #2a2b37;
+  --border-strong:  #3a3b4a;
+  --field-bg:       #23242f;
+  --field-bg-alt:   #23242f;
+  --hover-soft:     #23242f;
+  --hover-row:      #2b2c3a;
+}
+
+html[data-theme="dark"] body {
+  background: #14151b;
+  color: #e7e7ec;
+}
+
+/* ── Surfaces (white cards → dark panels) ─────────────────────────────────── */
+html[data-theme="dark"] .tile,
+html[data-theme="dark"] .attn,
+html[data-theme="dark"] .zone,
+html[data-theme="dark"] .results-card,
+html[data-theme="dark"] .section,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .upload-card,
+html[data-theme="dark"] .entry-card,
+html[data-theme="dark"] .phase,
+html[data-theme="dark"] .tabs,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] #overall,
+html[data-theme="dark"] #settings-panel,
+html[data-theme="dark"] #history-panel,
+html[data-theme="dark"] #drop-zone,
+html[data-theme="dark"] #empty-state,
+html[data-theme="dark"] #loader {
+  background: #1e1f29;
+  color: #e7e7ec;
+  border-color: #2e2f3c;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Sticky sub-bars that sit on a card and must stay opaque while scrolling. */
+html[data-theme="dark"] .section-header,
+html[data-theme="dark"] .phase-header,
+html[data-theme="dark"] .filter-bar {
+  background: #1e1f29;
+  border-color: #2e2f3c;
+}
+
+/* Express identity (IBNO Coder). #696 merged the express SECTIONS away, so the
+   `.section.express` rules that styled them are gone with them — a dark rule
+   pointing at a dead id is exactly how both express headers once shipped light
+   on a dark page. What survives is the Service pill, which is markup that is
+   still rendered on every Ready to Enter row. Re-check this block whenever the
+   express markup is renamed. */
+html[data-theme="dark"] .express-yes { background: #1b2a47; color: #93c5fd; }
+html[data-theme="dark"] .express-no  { background: #23242f; color: #8b8b93; }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+html[data-theme="dark"] th {
+  background: #23242f;
+  color: #b9b9c6;
+  border-color: #2e2f3c;
+}
+/* Brand-ink (issue 393): the generic dark th rule above outranks the tools'
+   inline `th.today { color: var(--brand-ink) }` (theme.css loads after the
+   inline styles), so the today-header purple needs its own dark rule here. */
+html[data-theme="dark"] th.today { color: #c4b5fd; }
+html[data-theme="dark"] thead th { background: #23242f; }
+html[data-theme="dark"] td { border-color: #2a2b37; }
+html[data-theme="dark"] tbody tr:hover { background: #23242f; }
+/* IBNO Coder batch-selected manual-review row (#374): the light peach fill
+   (#fff6ee) leaves light text unreadable on dark. Use a warm dark tint that
+   still reads as "selected" against the neutral rows. */
+html[data-theme="dark"] #manual-tbody tr.row-checked td { background: #33270f; }
+
+/* ── Form fields ──────────────────────────────────────────────────────────── */
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="search"],
+html[data-theme="dark"] input[type="number"],
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] input:not([type]),
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  background: #23242f;
+  color: #e7e7ec;
+  border-color: #3a3b4a;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder { color: #8a8a97; }
+
+/* IBNO Coder code override (.code-select, the 59/11 -> 34 dropdown on Closure
+   Portal rows). It is a <select> styled as a purple code pill, so the generic
+   dark select rule above — (0,1,2), against the tool's inline .code-select at
+   (0,1,0) — repainted it grey with light text: the code read as bare text while
+   the .code-pill beside it stayed purple. Pre-existing on main; caught by
+   rendering the express lane in dark, where these rows sit at the top.
+   These selectors are (0,2,1) and (0,3,1), so they outrank the generic rule
+   and the 34 override keeps its distinct orange. */
+html[data-theme="dark"] .code-select {
+  background: #4D148C;
+  color: #fff;
+  border-color: transparent;
+}
+html[data-theme="dark"] .code-select.override-34 {
+  background: #c05621;
+  color: #fff;
+}
+
+/* ── Muted / secondary text ───────────────────────────────────────────────── */
+html[data-theme="dark"] .hint,
+html[data-theme="dark"] .item-note,
+html[data-theme="dark"] .subtitle,
+html[data-theme="dark"] .facet-label,
+html[data-theme="dark"] .format-note,
+html[data-theme="dark"] #funnel,
+html[data-theme="dark"] footer { color: #9b9ba8; }
+
+/* ── Schedule Coverage panel (PRD #231) ───────────────────────────────────── */
+html[data-theme="dark"] .cov-line { border-bottom-color: #2a2b37; }
+html[data-theme="dark"] .cov-line.cov-today { background: #23242f; }
+html[data-theme="dark"] .cov-day { color: #e7e7ec; }
+html[data-theme="dark"] .cov-rule { background: #23242f; color: #b9b9c6; }
+html[data-theme="dark"] .cov-cannotskip .cov-msg { color: #f87171; }
+html[data-theme="dark"] .cov-damagesnosolo .cov-msg { color: #f87171; }
+html[data-theme="dark"] .cov-uncovered  .cov-msg { color: #f59e0b; }
+html[data-theme="dark"] .cov-fragile    .cov-msg { color: #eab308; }
+html[data-theme="dark"] .cov-headcount  .cov-msg { color: #94a3b8; }
+html[data-theme="dark"] .cov-clear      .cov-msg { color: #4ade80; }
+html[data-theme="dark"] table.cov-map th.cov-map-area { color: #e7e7ec; }
+html[data-theme="dark"] table.cov-map th.today { color: #c4b5fd; } /* brand-ink, issue 393 */
+html[data-theme="dark"] .cov-cell.today { outline-color: #c4a7ec; }
+/* Mute "covered" in dark so the problem cells (yellow/orange/red) draw the eye,
+   not the good ones. */
+html[data-theme="dark"] .cov-cell-covered { background: #2f6b46; }
+
+/* Your scheduling rules panel (#243) */
+html[data-theme="dark"] .rule-line { border-bottom-color: #2a2b37; }
+html[data-theme="dark"] .rule-title { color: #e7e7ec; }
+html[data-theme="dark"] .rule-why { color: #9b9ba8; }
+html[data-theme="dark"] .rule-num { background: #2e2740; color: #c4a7ec; }
+
+/* ── Command Center backfill chips (#250) ─────────────────────────────────── */
+html[data-theme="dark"] .bf-chip { border-color:#3a3b4a; }
+html[data-theme="dark"] .bf-chip b { color:#e7e7ec; }
+html[data-theme="dark"] .bf-cost, html[data-theme="dark"] .bf-note { color:#9b9ba8; }
+html[data-theme="dark"] .bf-free   { background:#16321f; border-color:#2f6b46; }
+html[data-theme="dark"] .bf-reassign { background:#33270f; border-color:#7a5a1e; }
+html[data-theme="dark"] .bf-reopens-cannot-skip { background:#331616; border-color:#7a2e2e; }
+html[data-theme="dark"] .bf-reopens-cannot-skip b { color:#f87171; }
+html[data-theme="dark"] .bf-partner { color:#fbbf24; background:#3a2e12; }
+
+/* ── Floating theme toggle (visible in both modes) ────────────────────────── */
+.theme-toggle {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 200;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #ffffff;
+  color: #4D148C;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s, background 0.12s;
+}
+.theme-toggle:hover { transform: translateY(-1px); }
+html[data-theme="dark"] .theme-toggle {
+  background: #23242f;
+  color: #ffd479;
+  border-color: #3a3b4a;
+}
+
+/* ── Time-Off: the FLAGGED attendance row ─────────────────────────────────────
+ * time-off-log.html tints a flagged admin's row with a light red wash
+ * (#fef6f6 / #f6caca). That tint had no dark counterpart while every text
+ * colour inside it DOES follow the theme, so on a dark page it rendered
+ * near-white type on a near-white card:
+ *
+ *     admin name    1.16:1     rolling counts   1.82:1     (AA wants 4.5:1)
+ *     unflagged row 12.48:1                     7.93:1     — fine, which is
+ *       what identifies this as the tint failing to switch, not the text
+ *
+ * Unreadable on precisely the rows naming an admin approaching a documented
+ * conversation — the highest-stakes text in the tool. It had never been seen
+ * because dark mode did not work at all on the hosted build (the body stayed
+ * light), so this tint had never met a dark page; repairing that deploy is
+ * what made it reachable. Measured in real Chrome, both themes, 2026-08-21,
+ * and re-measured after: 13.75:1 and 8.73:1.
+ *
+ * Lives HERE rather than inline in the tool for the two reasons this file
+ * exists: theme.css loads last, so a dark value put inline can silently lose
+ * to a generic selector here; and tests/theme-contrast-dom.test.js budgets
+ * hardcoded hex in the tools precisely to keep dark values from accumulating
+ * there. The selectors are used by time-off-log.html alone (verified by grep
+ * across every tool and lib), so nothing else can pick these up.
+ *
+ * Not tokenized, matching this file's stated rule: red here is a STATUS
+ * colour, and the palette above deliberately leaves status colours alone.
+ */
+html[data-theme="dark"] .watch-row.flagged {
+  background: #2b1719;
+  border-color: #7f3336;
+}
+html[data-theme="dark"] .watch-flag { color: #fca5a5; }
+
+/* Screen-only chrome: the fixed toggle otherwise prints as a gray box in the
+   corner of every tool's printout. */
+@media print {
+  .theme-toggle { display: none !important; }
+}

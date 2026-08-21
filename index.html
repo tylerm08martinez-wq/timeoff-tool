@@ -12,17 +12,26 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Time-Off">
   <style>
+    /* Brand-ink text token (issue 393): theme.css deliberately leaves
+       FedEx purple untokenized for backgrounds/borders/pills (stays
+       meaningful in both themes), but purple TEXT on a dark surface is
+       illegible — this token is scoped to text-color uses only. */
+    :root { --brand-ink: #4D148C; }
+    html[data-theme="dark"] { --brand-ink: #c4b5fd; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a2e;
+      background: var(--app-bg);
+      color: var(--text);
       min-height: 100vh;
       padding: 20px;
     }
 
     header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
       background: #4D148C;
       color: white;
       padding: 14px 20px;
@@ -70,24 +79,24 @@
       margin-bottom: 20px;
     }
     .stat-card {
-      background: white;
+      background: var(--surface);
       border-radius: 8px;
       padding: 14px 18px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      border-left: 4px solid #e0e0e0;
+      border-left: 4px solid var(--border);
     }
     .stat-card.orange { border-color: #FF6200; }
     .stat-card.red    { border-color: #dc2626; }
     .stat-card.purple { border-color: #4D148C; }
-    .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-    .stat-card .value { font-size: 30px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+    .stat-card .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .stat-card .value { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1; }
     .stat-card.orange .value { color: #FF6200; }
     .stat-card.red .value    { color: #dc2626; }
-    .stat-card.purple .value { color: #4D148C; }
+    .stat-card.purple .value { color: var(--brand-ink); }
 
     /* ── Form panel ─────────────────────────────────────────────────────────── */
     .panel {
-      background: white;
+      background: var(--surface);
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       margin-bottom: 20px;
@@ -98,7 +107,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 14px 18px;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border-soft);
     }
     .panel-header h2 { font-size: 15px; font-weight: 700; }
     #form-mode { font-size: 12px; color: #FF6200; font-weight: 600; display: none; }
@@ -114,25 +123,25 @@
     label {
       font-size: 11px;
       font-weight: 700;
-      color: #4D148C;
+      color: var(--brand-ink);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 5px;
     }
     input, select, textarea {
-      border: 1px solid #d1c4e9;
+      border: 1px solid var(--border-strong);
       border-radius: 5px;
       padding: 8px 10px;
       font-size: 13px;
       font-family: inherit;
-      color: #1a1a2e;
-      background: #faf8ff;
+      color: var(--text);
+      background: var(--field-bg-alt);
       transition: border-color 0.15s, background 0.15s;
     }
     input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: #4D148C;
-      background: #fff;
+      background: var(--field-bg);
     }
     textarea { resize: vertical; min-height: 54px; }
     .form-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
@@ -145,34 +154,39 @@
       gap: 14px;
       flex-wrap: wrap;
     }
-    .toggle-wrap { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #555; }
+    .toggle-wrap { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-muted); }
     .toggle-wrap input { width: auto; }
     .filter-input {
       max-width: 200px;
-      background: #fff;
-      border: 1px solid #d1d5db;
+      background: var(--field-bg);
+      border: 1px solid var(--border-strong);
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th {
-      background: #fafafa;
+      background: var(--surface-3);
       padding: 9px 14px;
       text-align: left;
       font-weight: 600;
-      color: #666;
+      color: var(--text-muted);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid #ececec;
+      border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--text); background: var(--hover-soft); }
+    th.sortable.sort-active { color: var(--text); }
+    th.sortable.sort-active::after { content: ' \25B2'; font-size: 9px; color: var(--text-muted); }
+    th.sortable.sort-active.sort-desc::after { content: ' \25BC'; }
     td {
       padding: 9px 14px;
-      border-bottom: 1px solid #f5f5f5;
+      border-bottom: 1px solid var(--border-soft);
       vertical-align: middle;
     }
-    tbody tr:nth-child(even) td { background: #f8f7fd; }
-    tr:hover td { background: #ece8ff !important; }
+    tbody tr:nth-child(even) td { background: var(--surface-2); }
+    tr:hover td { background: var(--hover-row) !important; }
     tr:last-child td { border-bottom: none; }
 
     .type-pill, .status-pill-tbl, .impact-pill {
@@ -202,7 +216,7 @@
     .type-calloff          { background: #fff3e0; color: #b45309; }
     .type-leftearly        { background: #e0f2fe; color: #075985; }
 
-    .notif-cell { font-size: 12px; color: #555; }
+    .notif-cell { font-size: 12px; color: var(--text-muted); }
     .notif-afterstart { color: #dc2626; font-weight: 600; }
     .notif-none { color: #dc2626; font-weight: 600; }
 
@@ -219,19 +233,23 @@
     .watch-row {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
       padding: 11px 12px; border-radius: 7px; margin: 8px 6px;
-      background: #faf9fe; border: 1px solid #f0eef9;
+      background: var(--surface-2); border: 1px solid #f0eef9;
     }
     .watch-row.flagged { background: #fef6f6; border-color: #f6caca; }
     .watch-name { font-weight: 700; font-size: 14px; min-width: 120px; }
-    .watch-counts { display: flex; gap: 10px; font-size: 12px; color: #555; flex-wrap: wrap; }
-    .watch-counts b { color: #1a1a2e; }
+    .watch-counts { display: flex; gap: 10px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+    .watch-counts b { color: var(--text); }
     .watch-flags { flex-basis: 100%; }
     .watch-flag {
       display: block; margin-top: 6px; font-size: 12px; font-weight: 600;
       color: #b91c1c;
     }
+    /* The .flagged tint above is LIGHT-MODE ONLY and has no dark counterpart
+       here on purpose: its dark values live in theme.css, which loads after
+       this block and is where every dark value belongs (see #307 and the
+       hardcoded-colour budget in tests/theme-contrast-dom.test.js). */
     .watch-flag::before { content: "\26A0  "; }
-    .watch-empty { padding: 26px; text-align: center; color: #bbb; font-size: 13px; }
+    .watch-empty { padding: 26px; text-align: center; color: var(--text-fainter); font-size: 13px; }
     .watch-ok { color: #15803d; font-size: 11px; font-weight: 700; }
 
     .dispo-pill {
@@ -240,13 +258,13 @@
       white-space: nowrap;
     }
 
-    .note-cell { color: #555; font-size: 12px; max-width: 280px; }
+    .note-cell { color: var(--text-muted); font-size: 12px; max-width: 280px; }
     .action-cell { white-space: nowrap; }
     .row-btn {
       background: none;
-      border: 1px solid #d1d5db;
+      border: 1px solid var(--border-strong);
       border-radius: 4px;
-      color: #6b7280;
+      color: var(--text-muted);
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
@@ -258,8 +276,8 @@
     .row-btn.edit:hover   { background: #4D148C; border-color: #4D148C; color: white; }
     .row-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 
-    .empty-state { padding: 36px; text-align: center; color: #bbb; font-size: 13px; }
-    .week-label { font-size: 12px; color: #888; margin-left: 4px; }
+    .empty-state { padding: 36px; text-align: center; color: var(--text-fainter); font-size: 13px; }
+    .week-label { font-size: 12px; color: var(--text-faint); margin-left: 4px; }
 
     .sync-status { font-size: 12px; font-weight: 700; color: #fff; opacity: 0.95; white-space: nowrap; }
     .sync-status.ok      { color: #bbf7d0; }
@@ -267,22 +285,26 @@
     .sync-status.error   { color: #fecaca; }
     .sync-status.syncing { color: #e9d5ff; }
   </style>
+  <link rel="stylesheet" href="theme.css">
+  <script>(function(){try{if(localStorage.getItem('dashboard_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+  <script src="lib/theme.js"></script>
 </head>
 <body>
 
 <header>
-  <h1>Time-Off &amp; Attendance Log &mdash; Station 849</h1>
   <div style="display:flex;align-items:center;gap:14px">
-    <span id="sync-status" class="sync-status" title="Sync status"></span>
+    <a class="back-link" href="https://tylerm08martinez-wq.github.io/station-dashboard/">&larr; Dashboard</a>
     <a href="#" class="back-link" onclick="toggleSettings();return false;">&#9881; Settings</a>
+    <h1>Time-Off &amp; Attendance Log &mdash; Station 849</h1>
   </div>
+  <span id="sync-status" class="sync-status" title="Sync status"></span>
 </header>
 
 <!-- ── Settings panel (sync) ──────────────────────────────────────────────── -->
 <div class="panel" id="settings-panel" style="display:none">
   <div class="panel-header"><h2>Sync Settings</h2></div>
   <div style="padding:16px 20px">
-    <p style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.5">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
       Paste a <b>fine-grained Personal Access Token</b> scoped to your private data repo with
       <b>Contents: Read and write</b>, then enter where the data lives. All values are stored
       <b>only in this browser</b>; nothing is baked into this page or committed.
@@ -341,7 +363,8 @@
       </div>
       <div class="field">
         <label for="f-employee">Admin</label>
-        <input type="text" id="f-employee" placeholder="Name" required autocomplete="off">
+        <input type="text" id="f-employee" placeholder="Name" required autocomplete="off" list="admin-names">
+        <datalist id="admin-names"></datalist>
       </div>
       <div class="field">
         <label for="f-type">Event</label>
@@ -378,7 +401,7 @@
         </label>
       </div>
       <div class="field" id="field-disposition">
-        <label for="f-disposition">Disposition <span style="font-weight:400;text-transform:none;color:#888">(device-only)</span></label>
+        <label for="f-disposition">Disposition <span style="font-weight:400;text-transform:none;color:var(--text-faint)">(device-only)</span></label>
         <select id="f-disposition">
           <option>None</option>
           <option>Verbal</option>
@@ -440,15 +463,15 @@
   <table>
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Admin</th>
-        <th>Event</th>
-        <th>Status</th>
-        <th>Notification</th>
-        <th>Reported Time</th>
-        <th>Impact</th>
-        <th>Note</th>
-        <th>Disposition</th>
+        <th data-sort="date">Date</th>
+        <th data-sort="admin">Admin</th>
+        <th data-sort="event">Event</th>
+        <th data-sort="status">Status</th>
+        <th data-sort="notification">Notification</th>
+        <th data-sort="time">Reported Time</th>
+        <th data-sort="impact">Impact</th>
+        <th data-sort="note">Note</th>
+        <th data-sort="disposition">Disposition</th>
         <th style="width:130px">Actions</th>
       </tr>
     </thead>
@@ -457,9 +480,13 @@
 </div>
 
 <script src="lib/tool-helpers.js"></script>
+<script src="lib/admins.js"></script>
 <script src="lib/time-off.js"></script>
 <script src="lib/attendance-rules.js"></script>
+<script src="lib/github-json-sync.js"></script>
 <script src="lib/entries-sync.js"></script>
+<script src="lib/sync-controller.js"></script>
+<script src="lib/table-sort.js"></script>
 <script>
 // ─── PERSISTENCE ────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'timeoff_entries';
@@ -689,7 +716,7 @@ function render() {
     return;
   }
 
-  const dash = '<span style="color:#bbb">—</span>';
+  const dash = '<span style="color:var(--text-fainter)">—</span>';
   rows.forEach(en => {
     const statusCell = en.status
       ? '<span class="status-pill-tbl ' + pillClass('status', en.status) + '">' + ToolHelpers.escapeHtml(en.status) + '</span>'
@@ -728,6 +755,40 @@ function render() {
   });
 }
 
+// Header sort (shared lib/table-sort.js). DISPLAY-ONLY: clicking a header
+// re-orders the existing DOM rows of the log table. It reads the visible cell
+// text (Date is ISO YYYY-MM-DD, which text-sorts chronologically) and never
+// touches the entries data, lib/attendance-rules.js, or any classification —
+// the flag/disposition logic is unchanged. The per-row Edit/Delete buttons keep
+// working because rows are moved, not re-created. The default view is still
+// newest-date-first (set in render()); a click just re-orders that snapshot.
+let __sortWired = false;
+function wireHeaderSort() {
+  if (__sortWired || typeof TableSort === 'undefined') return;
+  const tbody = document.getElementById('entries-tbody');
+  if (!tbody) return;
+  const table = tbody.closest('table');
+  if (!table) return;
+  const ths = table.querySelectorAll('thead th');
+  const colOf = {};
+  Array.prototype.forEach.call(ths, function (th, i) {
+    const k = th.getAttribute('data-sort');
+    if (k != null) colOf[k] = i;
+  });
+  TableSort.attachTableSort(table, {
+    tbody: tbody,
+    // Skip the "no entries / filter" placeholder row (it has a colspan cell).
+    isDataRow: function (r) { return !r.querySelector('.empty-state'); },
+    getValue: function (r, key) {
+      const idx = colOf[key];
+      const cell = idx == null ? null : r.children[idx];
+      return cell ? cell.textContent.trim() : '';
+    },
+    firstDirFor: function (key) { return key === 'date' ? -1 : 1; },
+  });
+  __sortWired = true;
+}
+
 function downloadTSV() {
   const active = activeList();
   if (active.length === 0) { alert('No entries to export.'); return; }
@@ -742,26 +803,15 @@ function downloadLogMd() {
   ToolHelpers.downloadTSV('log.md', content, 'text/markdown');
 }
 
-// ─── SYNC CONTROLLER (issue #110) ───────────────────────────────────────────
+// ─── SYNC (issue #110) — lifecycle lives in lib/sync-controller.js ───────────
 const TOKEN_KEY  = 'timeoff_gh_token';
 const COORDS_KEY = 'timeoff_repo_coords';
 const SHA_KEY    = 'timeoff_gh_sha';
-let knownSha  = toolStorage.get(SHA_KEY, null);
-let dirty     = false;
-let syncing   = false;
-let syncTimer = null;
-
-function getToken() { return toolStorage.get(TOKEN_KEY, ''); }
-
-// Repo coordinates are settings-driven (ADR 0005 hosting amendment, #116):
-// nothing about the private data repo is hard-coded in this public page.
-function getCoords() { return toolStorage.get(COORDS_KEY, { owner: '', repo: '', branch: '' }); }
-function hasCoords() { const c = getCoords(); return !!(c.owner && c.repo && c.branch); }
-function syncReady() { return !!getToken() && hasCoords(); }
 
 // Disposition is device-local (ADR 0005): it must never reach the repo, and a
-// remote facts-update must not wipe it locally. Snapshot it before a merge and
-// re-attach afterward; the repo payload is projected through factsOnly on PUT.
+// remote facts-update must not wipe it locally. setLocal runs while `entries`
+// still holds the pre-merge list, so the snapshot is taken there and re-attached
+// after; the repo payload is projected through factsOnly on PUT.
 function localOnlyMap() {
   const m = {};
   entries.forEach(e => { if (e && e.disposition) m[e.id] = e.disposition; });
@@ -773,79 +823,48 @@ function reattachLocalOnly(list, map) {
 }
 
 function setStatus(kind, text) {
+  // `document` can be gone when a sync continuation outlives the page (jsdom
+  // window.close() in DOM tests); a dead page needs no status update.
+  if (typeof document === 'undefined' || !document) return;
   const el = document.getElementById('sync-status');
-  el.className = 'sync-status ' + kind;
-  el.textContent = text;
+  if (el) { el.className = 'sync-status ' + kind; el.textContent = text; }
 }
 
-function refreshStatus() {
-  if (!getToken())      return setStatus('', 'sync off — add token in Settings');
-  if (!hasCoords())     return setStatus('', 'sync off — add repo in Settings');
-  if (syncing)          return setStatus('syncing', 'syncing…');
-  if (dirty)            return setStatus('dirty', 'unsynced — tap Sync now');
-  setStatus('ok', 'synced ✓');
-}
+// Repo coordinates are settings-driven (ADR 0005 hosting amendment, #116):
+// nothing about the private data repo is hard-coded in this public page.
+const syncCtl = SyncController.create({
+  storage: toolStorage,
+  keys: { token: TOKEN_KEY, coords: COORDS_KEY, sha: SHA_KEY },
+  setStatus: setStatus,
+  messages: {
+    offNoToken:  ['', 'sync off — add token in Settings'],
+    offNoCoords: ['', 'sync off — add repo in Settings'],
+    pushError:   () => ['error', 'offline — ' + activeList().length + ' local'],
+  },
+  adapter: {
+    fetch: async (token, coords) => {
+      const r = await EntriesSync.fetchRemote(token, coords);
+      return { data: r.entries, sha: r.sha };
+    },
+    // factsOnly strips disposition from the repo payload; the merged result
+    // keeps full local detail.
+    push: async (token, local, sha, coords) => {
+      const r = await EntriesSync.pushMerge(token, local, sha, 3, TimeOff.factsOnly, coords);
+      return { data: r.entries, sha: r.sha };
+    },
+    mergeLocal: (remote, local) => EntriesSync.merge(local, remote),
+  },
+  getLocal: () => entries,
+  setLocal: merged => { entries = reattachLocalOnly(merged, localOnlyMap()); saveEntries(); render(); },
+  // Only push back after the load pull if this device actually has something
+  // new — avoids an empty commit on every load.
+  pullPushBack: (local, remote) => EntriesSync.hasLocalChanges(local.map(TimeOff.factsOnly), remote),
+});
 
-// Background sync after a local change: debounced GET-merge-PUT.
-function scheduleSync() {
-  dirty = true;
-  refreshStatus();
-  if (!syncReady()) return;           // stays local-only until token + repo set
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(syncNow, 800);
-}
-
-async function syncNow() {
-  const token = getToken();
-  if (!syncReady()) { refreshStatus(); return; }
-  if (syncing) return;
-  syncing = true; refreshStatus();
-  try {
-    const localOnly = localOnlyMap();
-    // factsOnly strips disposition from the repo payload; merged result keeps
-    // full local detail, and we re-attach disposition for the local cache.
-    const result = await EntriesSync.pushMerge(token, entries, knownSha, 3, TimeOff.factsOnly, getCoords());
-    entries = reattachLocalOnly(result.entries, localOnly);
-    knownSha = result.sha;
-    toolStorage.set(SHA_KEY, knownSha);
-    saveEntries();
-    dirty = false;
-    render();
-    setStatus('ok', 'synced ✓');
-  } catch (e) {
-    if (e.code === 'auth')      setStatus('error', 'token invalid — update in Settings');
-    else if (e.code === 'conflict') setStatus('error', 'sync conflict — tap Sync now');
-    else                        setStatus('error', 'offline — ' + activeList().length + ' local');
-  } finally {
-    syncing = false;
-  }
-}
-
-// Pull + merge on load so a device picks up others' entries.
-async function pullOnLoad() {
-  const token = getToken();
-  if (!syncReady()) { refreshStatus(); return; }
-  syncing = true; refreshStatus();
-  try {
-    const remote = await EntriesSync.fetchRemote(token, getCoords());
-    knownSha = remote.sha;
-    toolStorage.set(SHA_KEY, knownSha);
-    const localOnly = localOnlyMap();
-    const hadLocalChanges = EntriesSync.hasLocalChanges(entries.map(TimeOff.factsOnly), remote.entries);
-    entries = reattachLocalOnly(EntriesSync.merge(entries, remote.entries), localOnly);
-    saveEntries();
-    render();
-    syncing = false;
-    // Only push back if this device actually has something new — avoids an
-    // empty commit on every load.
-    if (hadLocalChanges) { await syncNow(); }
-    else { dirty = false; setStatus('ok', 'synced ✓'); }
-  } catch (e) {
-    syncing = false;
-    if (e.code === 'auth') setStatus('error', 'token invalid — update in Settings');
-    else setStatus('error', 'offline — working locally');
-  }
-}
+function refreshStatus() { syncCtl.refreshStatus(); }
+function scheduleSync()  { syncCtl.scheduleSync(); }
+function syncNow()       { return syncCtl.syncNow(); }
+function pullOnLoad()    { return syncCtl.pullOnLoad(); }
 
 // ─── SETTINGS PANEL ─────────────────────────────────────────────────────────
 function toggleSettings() {
@@ -853,8 +872,8 @@ function toggleSettings() {
   const show = p.style.display === 'none';
   p.style.display = show ? '' : 'none';
   if (show) {
-    const c = getCoords();
-    document.getElementById('f-token').value  = getToken();
+    const c = syncCtl.getCoords();
+    document.getElementById('f-token').value  = syncCtl.getToken();
     document.getElementById('f-owner').value  = c.owner;
     document.getElementById('f-repo').value   = c.repo;
     document.getElementById('f-branch').value = c.branch;
@@ -865,18 +884,15 @@ function saveSettings() {
   const owner  = document.getElementById('f-owner').value.trim();
   const repo   = document.getElementById('f-repo').value.trim();
   const branch = document.getElementById('f-branch').value.trim();
-  toolStorage.set(TOKEN_KEY, token);
-  toolStorage.set(COORDS_KEY, { owner: owner, repo: repo, branch: branch });
+  syncCtl.saveSettings({ token: token, owner: owner, repo: repo, branch: branch });
   const msg = document.getElementById('token-msg');
-  if (syncReady())      msg.textContent = 'Saved. Syncing…';
+  if (syncCtl.syncReady())      msg.textContent = 'Saved. Syncing…';
   else if (token)       msg.textContent = 'Saved — add repo owner/name/branch to sync.';
   else                  msg.textContent = 'Saved locally — add a token to sync.';
-  refreshStatus();
-  if (syncReady()) syncNow();
+  if (syncCtl.syncReady()) syncNow();
 }
 function clearSettings() {
-  toolStorage.set(TOKEN_KEY, '');
-  toolStorage.set(COORDS_KEY, { owner: '', repo: '', branch: '' });
+  syncCtl.clearSettings();
   document.getElementById('f-token').value  = '';
   document.getElementById('f-owner').value  = '';
   document.getElementById('f-repo').value   = '';
@@ -890,8 +906,23 @@ loadEntries();
 document.getElementById('f-date').value = ToolHelpers.isoDate();
 syncFormFields();
 render();
+wireHeaderSort();
 refreshStatus();
 pullOnLoad();
+</script>
+<script>
+  ToolHelpers.pinHeader();
+  // Preload the Admin selector with the QA roster (lib/admins.js, mirror of
+  // notes/admins.md). The field stays free-text, so a name off the list (a temp)
+  // can still be typed.
+  (function () {
+    const dl = document.getElementById('admin-names');
+    if (dl && window.Admins && Array.isArray(Admins.ADMINS)) {
+      dl.innerHTML = Admins.ADMINS
+        .map(function (n) { return '<option value="' + ToolHelpers.escapeHtml(n) + '"></option>'; })
+        .join('');
+    }
+  })();
 </script>
 </body>
 </html>
