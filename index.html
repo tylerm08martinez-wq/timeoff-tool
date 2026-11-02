@@ -295,6 +295,8 @@
   <div style="display:flex;align-items:center;gap:14px">
     <a class="back-link" href="https://tylerm08martinez-wq.github.io/station-dashboard/">&larr; Dashboard</a>
     <a href="#" class="back-link" onclick="toggleSettings();return false;">&#9881; Settings</a>
+    <a class="back-link" href="https://tylerm08martinez-wq.github.io/station-dashboard/people.html" id="edit-people-link">Edit people</a>
+    <span id="people-note" class="back-link" hidden>People list unreadable, using the built-in admins</span>
     <h1>Time-Off &amp; Attendance Log &mdash; Station 849</h1>
   </div>
   <span id="sync-status" class="sync-status" title="Sync status"></span>
@@ -481,6 +483,7 @@
 
 <script src="lib/tool-helpers.js"></script>
 <script src="lib/admins.js"></script>
+<script src="lib/people.js"></script>
 <script src="lib/time-off.js"></script>
 <script src="lib/attendance-rules.js"></script>
 <script src="lib/github-json-sync.js"></script>
@@ -912,16 +915,29 @@ pullOnLoad();
 </script>
 <script>
   ToolHelpers.pinHeader();
-  // Preload the Admin selector with the QA roster (lib/admins.js, mirror of
-  // notes/admins.md). The field stays free-text, so a name off the list (a temp)
-  // can still be typed.
+  // Preload the Admin selector. The admins on the People list (lib/people.js,
+  // edited on people.html, #1117) when it holds at least one admin; otherwise the QA roster
+  // (lib/admins.js, mirror of notes/admins.md), exactly as before. The field
+  // stays free-text, so a name off the list (a temp) can still be typed. This
+  // only fills suggestions: nothing here touches entries or classification.
   (function () {
     const dl = document.getElementById('admin-names');
-    if (dl && window.Admins && Array.isArray(Admins.ADMINS)) {
-      dl.innerHTML = Admins.ADMINS
-        .map(function (n) { return '<option value="' + ToolHelpers.escapeHtml(n) + '"></option>'; })
-        .join('');
+    const fallback = window.Admins && Array.isArray(Admins.ADMINS) ? Admins.ADMINS : null;
+    function fill() {
+      const picked = window.People && typeof People.adminNames === 'function'
+        ? People.adminNames(window.localStorage, fallback)
+        : { names: fallback, unreadable: false };
+      const note = document.getElementById('people-note');
+      if (note) note.hidden = !picked.unreadable;
+      if (dl) {
+        dl.innerHTML = (picked.names || [])
+          .map(function (n) { return '<option value="' + ToolHelpers.escapeHtml(n) + '"></option>'; })
+          .join('');
+      }
     }
+    fill();
+    // The People page in another tab changed the list: refresh the suggestions.
+    window.addEventListener('storage', function (ev) { if (!ev || ev.key == null || ev.key === 'people:list') fill(); });
   })();
 </script>
 </body>
